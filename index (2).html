@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="從一杯熱水連續放大一千多萬倍，看水分子把咖啡分子從粉粒表面撞下來的即時模擬動畫。">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>縮小進咖啡杯</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500&family=Noto+Serif+TC:wght@500;700&display=swap">
+<style>
+:root{--ink:#080a0d;--panel:#10151a;--line:#212a33;--text:#ebe6de;--muted:#949ca4;--crema:#d8a468;color-scheme:dark}
+html,body{background:var(--ink)}
+body{color:var(--text);font:15px/1.65 "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding-block:28px 56px;padding-inline:16px;display:grid;gap:20px}
+.kicker{font:500 12px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.14em;color:var(--crema);margin:0 0 10px}
+h1{font:700 clamp(28px,4.4vw,44px)/1.15 "Noto Serif TC","Songti TC",serif;margin:0;text-wrap:balance;letter-spacing:.02em}
+.lede{margin:8px 0 0;color:var(--muted);max-width:60ch}
+.stage{background:#000;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.frame{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;container-type:inline-size}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage:fullscreen{display:flex;align-items:center;justify-content:center;border:0;border-radius:0}
+.stage:fullscreen .frame{width:min(100vw,177.78vh)}
+.hud::before{content:"";position:absolute;inset:0 0 auto 0;height:18cqw;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,0))}
+.hud{position:absolute;inset:0;pointer-events:none;font-family:"JetBrains Mono",ui-monospace,monospace;color:#e9e4dc;font-size:clamp(10px,1.3cqw,15px)}
+.tl{position:absolute;left:2.4cqw;top:2.2cqw;display:grid;gap:.6em;justify-items:start}
+.chap{font-family:"Noto Serif TC","Songti TC",serif;font-weight:500;font-size:1.3em;letter-spacing:.06em;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.scale{display:flex;align-items:center;gap:.7em;color:#cfd6dc}
+.bar{height:6px;border:1.5px solid #e9e4dc;border-top:0;min-width:6px}
+.tr{position:absolute;right:2.4cqw;top:2.2cqw;text-align:right;display:grid;gap:.3em;color:#cfd6dc;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+#mag{color:var(--crema);font-size:1.15em;font-variant-numeric:tabular-nums}
+.count{color:#cfd6dc;font-variant-numeric:tabular-nums}
+.cap{position:absolute;left:50%;bottom:5cqw;transform:translateX(-50%);width:min(80%,60em);text-align:center;font:500 clamp(13px,2.1cqw,26px)/1.5 "Noto Serif TC","Songti TC",serif;color:#fbf7f0;text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.8);transition:opacity .35s;text-wrap:balance}
+.controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.grp{display:flex;gap:8px;flex-wrap:wrap}
+.btn,.chip{font:500 14px/1 "Noto Sans TC",system-ui,sans-serif;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;cursor:pointer}
+.btn:hover,.chip:hover{border-color:#3a4550}
+.btn.primary{background:var(--crema);color:#1a0f06;border-color:var(--crema);min-width:5em}
+.chip[aria-current="true"]{border-color:var(--crema);color:var(--crema)}
+:focus-visible{outline:2px solid var(--crema);outline-offset:2px}
+.temp{display:flex;align-items:center;gap:10px;color:var(--muted)}
+.temp input{accent-color:var(--crema);width:150px}
+.temp output{font:500 14px "JetBrains Mono",ui-monospace,monospace;color:var(--text);min-width:4.5ch;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:10px 26px;color:var(--muted);font-size:14px;padding-block:14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.lg{display:flex;align-items:center;gap:8px}
+.lg b{color:var(--text);font-weight:500}
+.dots{display:inline-flex;align-items:center;gap:2px}
+.dot{border-radius:50%;display:inline-block}
+.notes h2{font:700 18px "Noto Serif TC","Songti TC",serif;margin:0 0 10px}
+.notes ul{margin:0;padding-left:1.2em;color:#c9ced3;max-width:68ch;display:grid;gap:6px}
+@media (max-width:560px){.temp input{width:110px}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <p class="kicker">MICRO DIVE · 即溶咖啡 × 90°C 熱水</p>
+    <h1>縮小進咖啡杯</h1>
+    <p class="lede">從一杯熱水開始，連續放大一千多萬倍，一路縮到水分子撞咖啡分子的尺度。分子畫面是即時物理模擬，水溫可以調。</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <div class="frame" id="frame">
+      <canvas id="cv"></canvas>
+      <div class="hud">
+        <div class="tl">
+          <div id="chap" class="chap">① 一杯熱水</div>
+          <div class="scale"><div id="bar" class="bar"></div><span id="barLbl">1 cm</span></div>
+          <div id="count" class="count" hidden></div>
+        </div>
+        <div class="tr"><div id="mag">放大 ×1</div><div id="clock">時間：實際速度</div></div>
+        <div id="cap" class="cap"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="grp">
+      <button id="play" class="btn primary">暫停</button>
+      <button id="restart" class="btn">重播</button>
+    </div>
+    <div class="grp" role="group" aria-label="章節">
+      <button class="chip" data-ch="0">① 杯子</button>
+      <button class="chip" data-ch="1">② 粉粒</button>
+      <button class="chip" data-ch="2">③ 分子</button>
+    </div>
+    <label class="temp" for="tempR">水溫 <input type="range" id="tempR" min="10" max="95" step="1" value="90"><output id="tempO">90°C</output></label>
+    <div class="grp">
+      <button id="capBtn" class="btn" aria-pressed="true">字幕：開</button>
+      <button id="fsBtn" class="btn">全螢幕</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span class="lg"><span class="dots"><i class="dot" style="width:7px;height:7px;background:#eceef2"></i><i class="dot" style="width:12px;height:12px;background:#d43a30"></i><i class="dot" style="width:7px;height:7px;background:#eceef2"></i></span><b>水分子</b> 紅＝氧、白＝氫</span>
+    <span class="lg"><span class="dots"><i class="dot" style="width:9px;height:9px;background:#426ed8"></i><i class="dot" style="width:9px;height:9px;background:#5a606a"></i></span><b>咖啡因</b> 藍＝氮、灰＝碳</span>
+    <span class="lg"><span class="dots"><i class="dot" style="width:9px;height:9px;background:#5a606a"></i><i class="dot" style="width:9px;height:9px;background:#d43a30"></i></span><b>綠原酸</b> 酸味與澀感的來源之一</span>
+    <span class="lg"><span class="dots"><i class="dot" style="width:13px;height:13px;background:#804a24"></i></span><b>類黑素</b> 烘焙時生成，咖啡的棕色主要來自它</span>
+  </div>
+
+  <section class="notes">
+    <h2>哪些是真的，哪些是簡化</h2>
+    <ul>
+      <li>三個畫面的比例尺照真實尺寸換算：粉粒約 1.5 毫米，水分子直徑約 0.28 奈米。</li>
+      <li>咖啡因的骨架照真實結構排列：兩個相連的環、兩個氧、三個甲基；分子上的氫原子省略沒畫。</li>
+      <li>分子之間的碰撞、動量交換、被敲下來的機率，都是當下即時計算，不是預錄的軌跡。</li>
+      <li>分子畫面的時間放慢了大約 3,000 億倍；水溫對速度的影響也刻意放大，才看得出差別。</li>
+      <li>類黑素其實是很大的高分子，這裡縮成一團代表；真實世界是立體的，這裡壓成平面。</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(()=>{
+const LW=1600, LH=900;
+const frame=document.getElementById('frame'), cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const T_AB0=9, T_AB1=13, T_BC0=23, T_BC1=27;
+const MPP_A=0.09/520, MPP_B=1.5e-3/360, MPP_C=2.8e-10/18, CAM_C=1.06;
+let K=1, temp=90, t=0, playing=true, showCap=true, BA=1;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const clamp=(x,a,b)=>x<a?a:x>b?b:x;
+const lerp=(a,b,u)=>a+(b-a)*u;
+const smooth=(a,b,x)=>{x=clamp((x-a)/(b-a),0,1);return x*x*(3-2*x);};
+const tempF=()=>0.25+0.75*Math.pow(temp/90,1.5);
+const TAU=Math.PI*2;
+
+/* ---------- sprites ---------- */
+const SPR={};
+const shade=(c,f)=>f>=0?c.map(v=>Math.round(v+(255-v)*f)):c.map(v=>Math.round(v*(1+f)));
+const css=(c,a=1)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
+function sphere(c,r){const pad=2,s=Math.ceil(r*2*K)+pad*2,cn=document.createElement('canvas');cn.width=cn.height=s;
+  const g=cn.getContext('2d'),cx=s/2,rr=r*K,gr=g.createRadialGradient(cx-rr*.38,cx-rr*.42,rr*.04,cx,cx,rr);
+  gr.addColorStop(0,css(shade(c,.8)));gr.addColorStop(.3,css(shade(c,.15)));gr.addColorStop(.75,css(c));gr.addColorStop(1,css(shade(c,-.62)));
+  g.fillStyle=gr;g.beginPath();g.arc(cx,cx,rr,0,TAU);g.fill();return {c:cn,h:s/2/K};}
+function soft(c,r,a){const s=Math.max(4,Math.ceil(r*2*K)),cn=document.createElement('canvas');cn.width=cn.height=s;
+  const g=cn.getContext('2d'),gr=g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  gr.addColorStop(0,css(c,a));gr.addColorStop(.45,css(c,a*.45));gr.addColorStop(1,css(c,0));g.fillStyle=gr;g.fillRect(0,0,s,s);return {c:cn,h:s/2/K};}
+function buildSprites(){
+  SPR.O=sphere([212,58,48],7.6); SPR.H=sphere([236,238,242],4.7);
+  SPR.sC=sphere([90,96,106],4.6); SPR.sN=sphere([66,110,216],4.8); SPR.sO=sphere([212,58,48],4.8); SPR.sB=sphere([128,74,36],7.2);
+  SPR.gran=sphere([82,45,20],5);
+  SPR.glow=soft([150,86,40],40,.4); SPR.plume=soft([104,56,24],30,.55); SPR.cloud=soft([122,68,30],30,.55);
+  SPR.bokeh=soft([150,190,215],30,.28); SPR.bokehR=soft([225,120,110],30,.2); SPR.flash=soft([255,232,195],20,.95);
+  SPR.speck=soft([200,222,236],6,.7);
+}
+function draw(sp,x,y,sc=1){const h=sp.h*sc;ctx.drawImage(sp.c,x-h,y-h,h*2,h*2);}
+const al=a=>{ctx.globalAlpha=BA*a;};
+function setCam(c){ctx.setTransform(K*c.s,0,0,K*c.s,K*(800-c.fx*c.s),K*(450-c.fy*c.s));}
+function scr(){ctx.setTransform(K,0,0,K,0,0);}
+function vis(c,x,y,r){const sx=(x-c.fx)*c.s+800,sy=(y-c.fy)*c.s+450,rr=r*c.s;return sx+rr>-10&&sx-rr<LW+10&&sy+rr>-10&&sy-rr<LH+10;}
+const ID={s:1,fx:800,fy:450};
+
+/* ---------- Stage A: the glass ---------- */
+const WS=262, BOT=760;
+const lf=y=>578+34*(y-190)/570, rt=y=>1600-lf(y);
+let A=null;
+function initA(){A={t:0,gr:[],pl:[],rip:[],tint:0};
+  for(let i=0;i<34;i++)A.gr.push({x:rnd(735,865),y:rnd(-260,-20),vx:rnd(-10,10),vy:rnd(0,60),r:rnd(3,5.2),st:0,ft:rnd(.2,1.4),m:1,e:0,tg:false,delay:rnd(.15,1.7),wob:rnd(0,6)});
+  Object.assign(A.gr[0],{x:806,y:-120,vx:0,r:4.4,ft:.8,delay:.6,tg:true});}
+function glassPath(i,y0,close=true){ctx.beginPath();ctx.moveTo(lf(y0)+i,y0);ctx.lineTo(lf(BOT-36)+i,BOT-36);
+  ctx.quadraticCurveTo(lf(BOT)+i,BOT-i,lf(BOT)+38,BOT-i);ctx.lineTo(rt(BOT)-38,BOT-i);
+  ctx.quadraticCurveTo(rt(BOT)-i,BOT-i,rt(BOT-36)-i,BOT-36);ctx.lineTo(rt(y0)-i,y0);if(close)ctx.closePath();}
+function updateA(dt){A.t+=dt;const f=tempF();
+  for(const g of A.gr){if(A.t<g.delay||g.st===3)continue;
+    if(g.st===0){g.vy+=900*dt;g.x+=g.vx*dt;g.y+=g.vy*dt;if(g.y>=WS){g.y=WS;g.st=1;g.vy=0;A.rip.push({x:g.x,r:2,a:.7});}}
+    else if(g.st===1){g.ft-=dt;g.x+=Math.sin(A.t*3+g.wob)*4*dt;if(g.ft<=0){g.st=2;g.vy=8;}}
+    else{const tv=(g.tg?30:42)*(.4+.6*g.m);g.vy+=(tv-g.vy)*2*dt;g.x+=Math.sin(A.t*1.7+g.wob)*9*dt;g.y+=g.vy*dt;if(g.y>BOT-12)g.y=BOT-12;}
+    if(g.st>=1){g.m-=(g.tg?.045:.22)*f*(g.st===1?.5:1)*dt;g.e+=dt*f*(g.st===1?10:18);
+      while(g.e>1){g.e-=1;if(A.pl.length<1100)A.pl.push({x:g.x+rnd(-2,2),y:g.y+(g.st===1?4:0),vx:rnd(-6,6),vy:rnd(0,10),r:rnd(3,6),g:rnd(5,12),a:rnd(.16,.3),l:0,ml:rnd(5,10)});A.tint=Math.min(.6,A.tint+.00018);}
+      if(g.m<=0&&!g.tg)g.st=3; if(g.tg)g.m=Math.max(g.m,.35);}
+  }
+  for(let i=A.pl.length-1;i>=0;i--){const p=A.pl[i];p.l+=dt;if(p.l>p.ml){A.pl.splice(i,1);continue;}
+    p.r+=p.g*dt/(1+p.l*.3);
+    p.vx+=(Math.sin(p.y*.02+A.t*.8)+Math.sin(p.y*.047-A.t*.5+p.x*.013))*28*dt;
+    p.vy+=(Math.cos(p.x*.018-A.t*.6)*12+10)*dt;
+    p.vx*=1-.5*dt;p.vy*=1-.4*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+    const L=lf(p.y)+10,R=rt(p.y)-10;if(p.x<L){p.x=L;p.vx=Math.abs(p.vx);}if(p.x>R){p.x=R;p.vx=-Math.abs(p.vx);}
+    if(p.y<WS+4){p.y=WS+4;p.vy=Math.abs(p.vy);}if(p.y>BOT-12){p.y=BOT-12;p.vy*=-.2;p.vx+=(p.x<800?-1:1)*20*dt;}}
+  for(let i=A.rip.length-1;i>=0;i--){const r=A.rip[i];r.r+=40*dt;r.a-=.8*dt;if(r.a<=0)A.rip.splice(i,1);}
+}
+function drawA(c){
+  scr();al(1);let g=ctx.createLinearGradient(0,0,0,LH);g.addColorStop(0,'#1b1c1f');g.addColorStop(1,'#0a0a0b');ctx.fillStyle=g;ctx.fillRect(0,0,LW,LH);
+  setCam(c);
+  g=ctx.createRadialGradient(800,380,40,800,380,640);g.addColorStop(0,'rgba(130,126,118,.22)');g.addColorStop(1,'rgba(130,126,118,0)');ctx.fillStyle=g;ctx.fillRect(100,-300,1400,1400);
+  ctx.fillStyle='#141210';ctx.fillRect(-4000,772,9600,4000);ctx.fillStyle='rgba(255,248,235,.07)';ctx.fillRect(-4000,772,9600,1.5);
+  ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.ellipse(800,780,250,12,0,0,TAU);ctx.fill();
+  ctx.save();glassPath(7,WS);ctx.clip();
+  g=ctx.createLinearGradient(0,WS,0,BOT);g.addColorStop(0,'rgba(150,190,205,.14)');g.addColorStop(1,'rgba(110,150,170,.22)');ctx.fillStyle=g;ctx.fillRect(500,WS-20,600,BOT-WS+40);
+  g=ctx.createLinearGradient(0,WS,0,BOT);g.addColorStop(0,`rgba(88,48,20,${A.tint*.5})`);g.addColorStop(1,`rgba(66,34,13,${Math.min(.88,A.tint*1.35)})`);ctx.fillStyle=g;ctx.fillRect(500,WS-20,600,BOT-WS+40);
+  for(const p of A.pl){if(!vis(c,p.x,p.y,p.r))continue;al(p.a*(1-p.l/p.ml));draw(SPR.plume,p.x,p.y,p.r/30);}
+  al(1);for(const q of A.gr)if(q.st===2)draw(SPR.gran,q.x,q.y,q.r/5*(.35+.65*q.m));
+  ctx.restore();
+  al(1);for(const q of A.gr)if((q.st===0||q.st===1)&&A.t>=q.delay)draw(SPR.gran,q.x,q.y,q.r/5);
+  const rx=(rt(WS)-lf(WS))/2-7;ctx.beginPath();ctx.ellipse(800,WS,rx,11,0,0,TAU);ctx.fillStyle=`rgba(190,215,225,${.05+A.tint*.12})`;ctx.fill();ctx.strokeStyle='rgba(225,238,244,.3)';ctx.lineWidth=1.5;ctx.stroke();
+  for(const r of A.rip){al(r.a);ctx.beginPath();ctx.ellipse(r.x,WS,r.r,r.r*.18,0,0,TAU);ctx.strokeStyle='rgba(235,242,246,.8)';ctx.lineWidth=1;ctx.stroke();}
+  al(1);ctx.strokeStyle='rgba(228,234,238,.34)';ctx.lineWidth=3;glassPath(0,190,false);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.moveTo(lf(205)+14,205);ctx.lineTo(lf(205)+26,205);ctx.lineTo(lf(720)+30,720);ctx.lineTo(lf(720)+18,720);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.045)';ctx.beginPath();ctx.moveTo(rt(215)-22,215);ctx.lineTo(rt(215)-16,215);ctx.lineTo(rt(700)-20,700);ctx.lineTo(rt(700)-26,700);ctx.fill();
+  ctx.strokeStyle='rgba(235,240,244,.42)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(800,190,(rt(190)-lf(190))/2,13,0,0,TAU);ctx.stroke();
+  ctx.strokeStyle='rgba(230,236,240,.16)';ctx.beginPath();ctx.ellipse(800,BOT-8,(rt(BOT)-lf(BOT))/2-34,7,0,0,TAU);ctx.stroke();
+}
+
+/* ---------- Stage B: one granule ---------- */
+let B=null;
+function gRv(v,th){const N=v.length;let u=((th%TAU)+TAU)%TAU/TAU*N;const i=Math.floor(u)%N,f=u-Math.floor(u);return v[i]*(1-f)+v[(i+1)%N]*f;}
+const gR=th=>gRv(B.verts,th);
+function initB(){const N=60,verts=[];for(let i=0;i<N;i++){const th=i/N*TAU;verts.push(172*(1+.13*Math.sin(3*th+1)+.08*Math.sin(5*th+2.3)+.05*Math.sin(11*th+.7)+rnd(-.018,.018)));}
+  const pores=[],specks=[];
+  for(let i=0;i<60;i++){const th=rnd(0,TAU),rho=Math.sqrt(Math.random())*.86*gRv(verts,th);pores.push({x:Math.cos(th)*rho,y:Math.sin(th)*rho,rx:rnd(2.5,12),ry:rnd(2,8),rot:rnd(0,3.14)});}
+  for(let i=0;i<320;i++){const th=rnd(0,TAU),rho=Math.sqrt(Math.random())*.95*gRv(verts,th);specks.push({x:Math.cos(th)*rho,y:Math.sin(th)*rho,s:rnd(.5,1.6),a:rnd(.08,.3)});}
+  const bok=[];for(let i=0;i<60;i++)bok.push({x:rnd(-200,1800),y:rnd(-100,1000),r:rnd(1.5,8),a:rnd(.1,.5),vx:rnd(-6,6),vy:rnd(-4,4)});
+  B={t:0,verts,pores,specks,bok,cl:[],bub:[],rot:0,s:1,e:0,eb:0};}
+function updateB(dt){B.t+=dt;const f=tempF();B.rot+=.03*dt;B.s=Math.max(.58,B.s-.026*f*dt);
+  B.e+=dt*55*f;while(B.e>1){B.e-=1;if(B.cl.length>700)continue;const th=rnd(0,TAU),r=gR(th-B.rot)*B.s,sp=rnd(12,30);
+    B.cl.push({x:800+Math.cos(th)*r,y:450+Math.sin(th)*r,vx:Math.cos(th)*sp,vy:Math.sin(th)*sp,r:rnd(8,16),g:rnd(10,22),a:rnd(.16,.3),l:0,ml:rnd(4,8)});}
+  B.eb+=dt*7*f;while(B.eb>1){B.eb-=1;const p=B.pores[Math.floor(Math.random()*B.pores.length)],c=Math.cos(B.rot),s=Math.sin(B.rot);
+    B.bub.push({x:800+(p.x*c-p.y*s)*B.s,y:450+(p.x*s+p.y*c)*B.s,r:rnd(1.5,5),vy:rnd(-30,-12),w:rnd(0,6)});}
+  for(let i=B.cl.length-1;i>=0;i--){const p=B.cl[i];p.l+=dt;if(p.l>p.ml){B.cl.splice(i,1);continue;}p.r+=p.g*dt;
+    p.vx=p.vx*(1-.6*dt)+Math.sin(p.y*.01+B.t*.6)*6*dt;p.vy=p.vy*(1-.6*dt)+10*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}
+  for(let i=B.bub.length-1;i>=0;i--){const b=B.bub[i];b.vy=Math.max(-120,b.vy-35*dt);b.y+=b.vy*dt;b.x+=Math.sin(B.t*4+b.w)*10*dt;if(b.y<-30)B.bub.splice(i,1);}
+  for(const k of B.bok){k.x+=k.vx*dt;k.y+=k.vy*dt;}
+}
+function granulePath(){const N=B.verts.length;ctx.beginPath();for(let i=0;i<N;i++){const th=i/N*TAU,r=B.verts[i];i?ctx.lineTo(Math.cos(th)*r,Math.sin(th)*r):ctx.moveTo(Math.cos(th)*r,Math.sin(th)*r);}ctx.closePath();}
+function drawB(c){
+  scr();al(1);let g=ctx.createRadialGradient(650,300,40,800,450,1000);g.addColorStop(0,'#1a3542');g.addColorStop(1,'#060f14');ctx.fillStyle=g;ctx.fillRect(0,0,LW,LH);
+  setCam(c);
+  for(const k of B.bok){if(!vis(c,k.x,k.y,k.r*2))continue;al(k.a);draw(SPR.speck,k.x,k.y,k.r/6);}
+  const ra=172*B.s;g=ctx.createRadialGradient(800,450,ra*.8,800,450,ra*1.6);g.addColorStop(0,'rgba(118,64,28,.45)');g.addColorStop(1,'rgba(118,64,28,0)');al(1);ctx.fillStyle=g;ctx.fillRect(800-ra*1.7,450-ra*1.7,ra*3.4,ra*3.4);
+  for(const p of B.cl){if(!vis(c,p.x,p.y,p.r))continue;al(p.a*(1-p.l/p.ml));draw(SPR.cloud,p.x,p.y,p.r/30);}
+  al(1);ctx.save();ctx.translate(800,450);ctx.rotate(B.rot);ctx.scale(B.s,B.s);
+  const cr=Math.cos(-B.rot),sr=Math.sin(-B.rot),lx=-70*cr+80*sr,ly=-70*sr-80*cr;
+  granulePath();g=ctx.createRadialGradient(lx,ly,10,0,0,205);g.addColorStop(0,'#9c6434');g.addColorStop(.45,'#5a3116');g.addColorStop(1,'#26120a');ctx.fillStyle=g;ctx.fill();
+  ctx.save();ctx.clip();
+  for(const p of B.pores){ctx.beginPath();ctx.ellipse(p.x,p.y,p.rx,p.ry,p.rot,0,TAU);ctx.fillStyle='rgba(18,8,3,.82)';ctx.fill();ctx.strokeStyle='rgba(170,110,60,.22)';ctx.lineWidth=1;ctx.stroke();}
+  ctx.fillStyle='#f3e2cc';for(const s of B.specks){al(s.a);ctx.fillRect(s.x,s.y,s.s,s.s);}
+  ctx.restore();al(1);
+  granulePath();ctx.lineWidth=12;ctx.strokeStyle='rgba(120,66,30,.3)';ctx.stroke();ctx.lineWidth=3.5;ctx.strokeStyle='rgba(172,110,60,.35)';ctx.stroke();
+  const N=B.verts.length;ctx.lineWidth=2;ctx.lineCap='round';
+  for(let i=0;i<N;i++){const th=i/N*TAU,th2=(i+1)/N*TAU,k=Math.cos(th+B.rot+2.3);if(k<.55)continue;al((k-.55)*.9);
+    ctx.strokeStyle='#ffecd6';ctx.beginPath();ctx.moveTo(Math.cos(th)*B.verts[i]*.985,Math.sin(th)*B.verts[i]*.985);ctx.lineTo(Math.cos(th2)*B.verts[(i+1)%N]*.985,Math.sin(th2)*B.verts[(i+1)%N]*.985);ctx.stroke();}
+  ctx.restore();
+  for(const b of B.bub){if(!vis(c,b.x,b.y,b.r))continue;al(1);ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fillStyle='rgba(200,225,240,.1)';ctx.fill();ctx.strokeStyle='rgba(220,236,246,.65)';ctx.lineWidth=1.1;ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.8)';ctx.fillRect(b.x-b.r*.45,b.y-b.r*.5,Math.max(.8,b.r*.3),Math.max(.8,b.r*.3));}
+}
+
+/* ---------- Stage C: molecules ---------- */
+function finalize(at,bd,m,R,sc=1){let cx=0,cy=0;at.forEach(a=>{cx+=a.x;cy+=a.y;});cx/=at.length;cy/=at.length;
+  at.forEach(a=>{a.x=(a.x-cx)*sc;a.y=(a.y-cy)*sc;});return {atoms:at,bonds:bd,m,R};}
+function caffeine(){const at=[],bd=[],hc=[-7,0];
+  const hexT=['sC','sC','sN','sC','sN','sC'];
+  for(let i=0;i<6;i++){const a=(-30+60*i)*Math.PI/180;at.push({x:hc[0]+11*Math.cos(a),y:hc[1]+11*Math.sin(a),k:hexT[i]});bd.push([i,(i+1)%6]);}
+  at.push({x:12.9,y:-9,k:'sN'},{x:19.3,y:0,k:'sC'},{x:12.9,y:9,k:'sN'});bd.push([0,6],[6,7],[7,8],[8,1]);
+  const out=(i,c,len,k)=>{const p=at[i],dx=p.x-c[0],dy=p.y-c[1],d=Math.hypot(dx,dy);at.push({x:p.x+dx/d*len,y:p.y+dy/d*len,k});bd.push([i,at.length-1]);};
+  out(3,hc,10,'sO');out(5,hc,10,'sO');out(4,hc,10,'sC');out(2,hc,10,'sC');out(6,[10,0],10,'sC');
+  return finalize(at,bd,10.8,27);}
+function cga(){const at=[],bd=[];const ring=(cx,cy,a0)=>{const b=at.length;for(let i=0;i<6;i++){const a=a0+i*Math.PI/3;at.push({x:cx+9*Math.cos(a),y:cy+9*Math.sin(a),k:'sC'});bd.push([b+i,b+(i+1)%6]);}return b;};
+  const out=(i,c,len,k)=>{const p=at[i],dx=p.x-c[0],dy=p.y-c[1],d=Math.hypot(dx,dy);at.push({x:p.x+dx/d*len,y:p.y+dy/d*len,k});bd.push([i,at.length-1]);return at.length-1;};
+  const r1=ring(-28,0,0);out(r1+2,[-28,0],8,'sO');out(r1+3,[-28,0],8,'sO');
+  const c1=at.push({x:-12,y:-4,k:'sC'})-1,c2=at.push({x:-5,y:0,k:'sC'})-1,c3=at.push({x:2,y:-4,k:'sC'})-1,o1=at.push({x:2,y:-12,k:'sO'})-1,oe=at.push({x:9,y:0,k:'sO'})-1;
+  bd.push([r1,c1],[c1,c2],[c2,c3],[c3,o1],[c3,oe]);
+  const r2=ring(25,0,Math.PI);bd.push([oe,r2]);out(r2+2,[25,0],8,'sO');out(r2+4,[25,0],8,'sO');
+  const cc=out(r2+3,[25,0],8,'sC');at.push({x:at[cc].x+6,y:at[cc].y-6,k:'sO'},{x:at[cc].x+6,y:at[cc].y+6,k:'sO'});bd.push([cc,at.length-2],[cc,at.length-1]);
+  return finalize(at,bd,19.7,30,.78);}
+function melanoidin(){const at=[];let tries=0;while(at.length<15&&tries<600){tries++;const a=rnd(0,TAU),r=Math.sqrt(Math.random())*17,x=Math.cos(a)*r,y=Math.sin(a)*r;
+  if(at.every(p=>Math.hypot(p.x-x,p.y-y)>9.5))at.push({x,y,k:Math.random()<.15?'O':'sB',sc:1});}
+  at.forEach(p=>{if(p.k==='O')p.sc=.75;});return finalize(at,[],40,26);}
+let TPL=null;
+const surf=y=>545+42*Math.sin(y*.011+.6)+22*Math.sin(y*.029+2.1);
+const CELL=64,COLS=Math.ceil(LW/CELL),ROWS=Math.ceil(LH/CELL);
+const cells=Array.from({length:COLS*ROWS},()=>[]);
+const OFFS=[[1,0],[-1,1],[0,1],[1,1]];
+let C=null;
+function initC(){if(!TPL)TPL={caf:caffeine(),cga:cga(),mel:melanoidin()};
+  const P=[],sol=[],wat=[];let row=0;
+  for(let y=-8;y<=908;y+=47,row++)for(let x=28+(row%2)*27;;x+=54){const jx=x+rnd(-5,5),jy=y+rnd(-5,5);if(jx>surf(jy))break;
+    const r=Math.random(),tp=r<.22?TPL.caf:r<.5?TPL.cga:TPL.mel;const s={kind:1,tp,x:jx,y:jy,vx:0,vy:0,a:rnd(0,TAU),w:0,R:tp.R,m:tp.m,bound:true,nb:0,nbrs:[],fl:0};sol.push(s);P.push(s);}
+  for(let i=0;i<sol.length;i++)for(let j=i+1;j<sol.length;j++)if(Math.hypot(sol[i].x-sol[j].x,sol[i].y-sol[j].y)<66){sol[i].nbrs.push(sol[j]);sol[j].nbrs.push(sol[i]);}
+  sol.forEach(s=>s.nb=s.nbrs.length);
+  const pg=new Map(),key=(i,j)=>i*1000+j;let tries=0;
+  while(wat.length<900&&tries<30000){tries++;const x=rnd(12,LW-12),y=rnd(0,LH);if(x<surf(y)+38)continue;
+    const ci=Math.floor(x/20),cj=Math.floor(y/20);let ok=true;
+    for(let a=-1;a<=1&&ok;a++)for(let b=-1;b<=1&&ok;b++){const l=pg.get(key(ci+a,cj+b));if(l)for(const o of l)if((o.x-x)**2+(o.y-y)**2<361){ok=false;break;}}
+    if(!ok)continue;const sp=55+.9*temp,ang=rnd(0,TAU);
+    const w={kind:0,x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,a:rnd(0,TAU),w:rnd(-3,3),R:9,m:1,bound:false};
+    wat.push(w);P.push(w);const k=key(ci,cj);if(!pg.has(k))pg.set(k,[]);pg.get(k).push(w);}
+  const bk=[];for(let i=0;i<46;i++)bk.push({x:rnd(0,LW),y:rnd(0,LH),r:rnd(14,40),vx:rnd(-7,7),vy:rnd(-5,5),a:rnd(.15,.45),red:Math.random()<.4});
+  const fg=[];for(let i=0;i<5;i++)fg.push({x:rnd(0,LW),y:rnd(0,LH),r:rnd(60,110),vx:rnd(-26,26),vy:rnd(-10,10),a:rnd(.07,.16),red:Math.random()<.5});
+  C={t:0,P,sol,wat,dis:0,total:sol.length,fl:[],rings:[],hb:new Float32Array(4000),hbN:0,bk,fg};}
+let collectHB=false;
+function tryDetach(s,imp,ox,oy){const p=.05*(imp/136)**2*Math.exp((temp-90)/32)/(1+s.nb*.7);
+  if(Math.random()<p){s.bound=false;const v=rnd(20,40);s.vx=ox*v;s.vy=oy*v;s.w=rnd(-1,1);s.fl=1;for(const n of s.nbrs)n.nb--;C.dis++;C.rings.push({x:s.x,y:s.y,l:0});}}
+function res(a,b){if(a.bound&&b.bound)return;let dx=b.x-a.x,dy=b.y-a.y;if(dy>LH/2)dy-=LH;else if(dy<-LH/2)dy+=LH;
+  const d2=dx*dx+dy*dy;
+  if(collectHB&&a.kind===0&&b.kind===0&&d2<676&&d2>324&&C.hbN<3996){const h=C.hb;h[C.hbN++]=a.x;h[C.hbN++]=a.y;h[C.hbN++]=a.x+dx;h[C.hbN++]=a.y+dy;}
+  const mn=a.R+b.R;if(d2>=mn*mn||d2===0)return;
+  const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,ov=mn-d,ia=a.bound?0:1/a.m,ib=b.bound?0:1/b.m,it=ia+ib;
+  a.x-=nx*ov*ia/it;a.y-=ny*ov*ia/it;b.x+=nx*ov*ib/it;b.y+=ny*ov*ib/it;
+  const vn=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+  if(vn<0){const j=-2*vn/it;a.vx-=j*ia*nx;a.vy-=j*ia*ny;b.vx+=j*ib*nx;b.vy+=j*ib*ny;const imp=-vn;
+    if(imp>250&&C.fl.length<36&&Math.random()<.12)C.fl.push({x:a.x+nx*a.R,y:a.y+ny*a.R,l:0});
+    if(a.bound&&b.kind===0)tryDetach(a,imp,nx,ny);else if(b.bound&&a.kind===0)tryDetach(b,imp,-nx,-ny);}}
+function updateC(dt){C.t+=dt;const n=Math.max(1,Math.ceil(dt/.017)),h=dt/n,SP=55+.9*temp;
+  for(let s=0;s<n;s++){
+    for(const o of C.P){if(o.bound)continue;o.x+=o.vx*h;o.y+=o.vy*h;o.a+=o.w*h;
+      if(o.kind===0){o.w=clamp((o.w+rnd(-1,1)*24*h)*(1-1.5*h),-6,6);}else{o.w=clamp((o.w+rnd(-1,1)*2*h)*(1-.5*h),-1.2,1.2);}
+      if(o.x<o.R){o.x=o.R;o.vx=Math.abs(o.vx);}if(o.x>LW-o.R){o.x=LW-o.R;o.vx=-Math.abs(o.vx);}
+      if(o.y<0)o.y+=LH;else if(o.y>=LH)o.y-=LH;}
+    for(const c of cells)c.length=0;
+    for(const o of C.P){const ci=clamp(Math.floor(o.x/CELL),0,COLS-1),cj=clamp(Math.floor(o.y/CELL),0,ROWS-1);cells[cj*COLS+ci].push(o);}
+    collectHB=(s===n-1);if(collectHB)C.hbN=0;
+    for(let cj=0;cj<ROWS;cj++)for(let ci=0;ci<COLS;ci++){const A1=cells[cj*COLS+ci];if(!A1.length)continue;
+      for(let a=0;a<A1.length;a++)for(let b=a+1;b<A1.length;b++)res(A1[a],A1[b]);
+      for(const [ox,oy] of OFFS){const ni=ci+ox;let nj=cj+oy;if(ni<0||ni>=COLS)continue;if(nj>=ROWS)nj-=ROWS;const B1=cells[nj*COLS+ni];if(!B1.length)continue;
+        for(const a of A1)for(const b of B1)res(a,b);}}
+    let s2=0;for(const w of C.wat)s2+=w.vx*w.vx+w.vy*w.vy;const lam=Math.sqrt(Math.max(.5,1+(h/.4)*(SP*SP/(s2/C.wat.length)-1)));
+    for(const o of C.P)if(!o.bound){o.vx*=lam;o.vy*=lam;}
+  }
+  for(let i=C.fl.length-1;i>=0;i--){C.fl[i].l+=dt;if(C.fl[i].l>.35)C.fl.splice(i,1);}
+  for(let i=C.rings.length-1;i>=0;i--){C.rings[i].l+=dt;if(C.rings[i].l>.9)C.rings.splice(i,1);}
+  for(const s of C.sol)if(!s.bound)s.fl=Math.max(0,s.fl-dt/4);
+  for(const b of C.bk){b.x=(b.x+b.vx*dt+LW+100)%(LW+100);b.y=(b.y+b.vy*dt+LH+100)%(LH+100);}
+  for(const b of C.fg){b.x=(b.x+b.vx*dt+LW+300)%(LW+300);b.y=(b.y+b.vy*dt+LH+300)%(LH+300);}
+}
+function drawSol(s){const tp=s.tp;ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.a);
+  if(tp.bonds.length){ctx.beginPath();for(const [i,j] of tp.bonds){ctx.moveTo(tp.atoms[i].x,tp.atoms[i].y);ctx.lineTo(tp.atoms[j].x,tp.atoms[j].y);}
+    ctx.strokeStyle='rgba(176,184,194,.85)';ctx.lineWidth=2.6;ctx.lineCap='round';ctx.stroke();}
+  for(const a of tp.atoms)draw(SPR[a.k],a.x,a.y,a.sc||1);ctx.restore();}
+function drawWater(o){const a1=o.a+.912,a2=o.a-.912;
+  draw(SPR.H,o.x+Math.cos(a1)*7,o.y+Math.sin(a1)*7);draw(SPR.O,o.x,o.y);draw(SPR.H,o.x+Math.cos(a2)*7,o.y+Math.sin(a2)*7);}
+function drawC(c){
+  scr();al(1);let g=ctx.createRadialGradient(620,280,40,800,450,1050);g.addColorStop(0,'#10293a');g.addColorStop(1,'#040a0f');ctx.fillStyle=g;ctx.fillRect(0,0,LW,LH);
+  const px=(c.fx-800)*.25,py=(c.fy-450)*.25;
+  for(const b of C.bk){al(b.a);draw(b.red?SPR.bokehR:SPR.bokeh,b.x-50-px,b.y-50-py,b.r/30);}
+  setCam(c);
+  for(const s of C.sol)if(s.bound&&vis(c,s.x,s.y,50)){al(.42);draw(SPR.glow,s.x,s.y,1.15);}
+  if(C.hbN&&c.s<4){al(1);ctx.beginPath();const h=C.hb;for(let i=0;i<C.hbN;i+=4){ctx.moveTo(h[i],h[i+1]);ctx.lineTo(h[i+2],h[i+3]);}
+    ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(150,205,235,.16)';ctx.lineWidth=1;ctx.stroke();ctx.setLineDash([]);}
+  al(1);for(const s of C.sol)if(s.bound&&vis(c,s.x,s.y,s.R))drawSol(s);
+  for(const s of C.sol){if(s.bound||!vis(c,s.x,s.y,s.R+20))continue;al(.3);draw(SPR.bokeh,s.x,s.y,(s.R+20)/30);if(s.fl>0){al(.6*s.fl);draw(SPR.glow,s.x,s.y,(s.R+14)/40);}}
+  al(1);for(const w of C.wat)if(vis(c,w.x,w.y,12))drawWater(w);
+  for(const s of C.sol)if(!s.bound&&vis(c,s.x,s.y,s.R)){al(1);drawSol(s);}
+  for(const f of C.fl){al((1-f.l/.35)*.7);draw(SPR.flash,f.x,f.y,.35+f.l*2);}
+  for(const r of C.rings){al((1-r.l/.9)*.8);ctx.beginPath();ctx.arc(r.x,r.y,24+r.l*70,0,TAU);ctx.strokeStyle='#e0ab6e';ctx.lineWidth=2;ctx.stroke();}
+  scr();for(const b of C.fg){al(b.a);draw(b.red?SPR.bokehR:SPR.bokeh,b.x-150-px*2.5,b.y-150-py*2.5,b.r/30);}
+}
+
+/* ---------- composition ---------- */
+const CAPS=[
+ [.4,4.3,'一杯 90°C 的熱水。撒進一小撮即溶咖啡粉。'],
+ [4.5,8.8,'每顆粉粒大約 1.5 毫米。挑其中一顆，我們跟著它下去。'],
+ [9.2,12.8,'縮小⋯⋯再縮小⋯⋯'],
+ [13.2,17.9,'這就是那顆粉。冷凍乾燥做出來的，全身都是孔，那些孔原本住著冰晶。'],
+ [18.1,22.8,'水鑽進孔裡，把空氣擠成小泡泡。周圍那團棕色的霧，是剛逃出來的咖啡分子。'],
+ [23.2,26.8,'再縮小二十七萬倍。'],
+ [27.4,33,'歡迎來到 0.3 奈米的世界。一顆紅的配兩顆白的，就是一個水分子。'],
+ [33.2,39,'它們從來不停下來。每一個水分子，每秒被撞上兆次。'],
+ [39.2,46,'左邊那面牆是咖啡粉的表面：咖啡因、綠原酸、類黑素，擠成一團。'],
+ [46.2,53,'撞得夠多、夠用力，就會有分子被敲下來⋯⋯'],
+ [53.2,60,'⋯⋯然後被水分子團團圍住，帶走。這件事，我們叫它溶解。'],
+ [60.5,1e9,'把下面的水溫調低看看，敲下來的速度會差很多。'],
+];
+const $=id=>document.getElementById(id);
+const hud={chap:$('chap'),bar:$('bar'),barLbl:$('barLbl'),mag:$('mag'),clock:$('clock'),cap:$('cap'),count:$('count')};
+const last={};
+function setText(k,v){if(last[k]!==v){last[k]=v;hud[k].textContent=v;}}
+function fmtLen(m){const u=[[1e-2,'cm'],[1e-3,'mm'],[1e-6,'μm'],[1e-10,'nm'],[0,'pm']],base={cm:1e-2,mm:1e-3,'μm':1e-6,nm:1e-9,pm:1e-12};
+  for(const [th,s] of u)if(m>=th){const v=m/base[s];return (v>=1?Math.round(v):+v.toPrecision(1))+' '+s;}}
+function fmtMag(x){if(x<1e4)return '×'+Math.round(x).toLocaleString('en-US');if(x<1e8)return '×'+(x<1e5?(x/1e4).toFixed(1):Math.round(x/1e4).toLocaleString('en-US'))+' 萬';return '×'+(x/1e8).toFixed(1)+' 億';}
+const E=p=>smooth(0,1,p);
+function render(){
+  scr();ctx.globalAlpha=1;ctx.fillStyle='#000';ctx.fillRect(0,0,LW,LH);
+  let mpp,chap,clock;
+  if(t<T_AB0){BA=1;drawA(ID);mpp=MPP_A;chap='① 一杯熱水';clock='時間：實際速度';}
+  else if(t<T_AB1){const p=(t-T_AB0)/(T_AB1-T_AB0),e=E(p);mpp=Math.exp(lerp(Math.log(MPP_A),Math.log(MPP_B),e));
+    const tg=A.gr[0],u=smooth(0,.3,p);
+    BA=1-smooth(.45,.8,p);if(BA>0)drawA({s:MPP_A/mpp,fx:lerp(800,tg.x,u),fy:lerp(450,tg.y,u)});
+    BA=smooth(.4,.75,p);if(BA>0)drawB({s:MPP_B/mpp,fx:800,fy:450});chap='縮小中 ↓';clock='放大中';}
+  else if(t<T_BC0){BA=1;drawB(ID);mpp=MPP_B;chap='② 一顆咖啡粉';clock='時間：實際速度';}
+  else if(t<T_BC1){const p=(t-T_BC0)/(T_BC1-T_BC0),e=E(p);mpp=Math.exp(lerp(Math.log(MPP_B),Math.log(MPP_C/CAM_C),e));
+    const u=smooth(0,.3,p),r=gR(-B.rot)*B.s;
+    BA=1-smooth(.45,.8,p);if(BA>0)drawB({s:MPP_B/mpp,fx:lerp(800,800+r,u),fy:450});
+    BA=smooth(.4,.75,p);if(BA>0){const v=smooth(.6,1,p);drawC({s:MPP_C/mpp,fx:lerp(surf(450)+8,800,v),fy:450});}
+    chap='縮小中 ↓';clock='放大中';}
+  else{BA=1;mpp=MPP_C/CAM_C;drawC({s:CAM_C,fx:800+18*Math.sin(C.t*.05),fy:450+12*Math.sin(C.t*.071)});chap='③ 分子的世界';clock='時間：放慢約 3,000 億倍';}
+  BA=1;scr();ctx.globalAlpha=1;const vg=ctx.createRadialGradient(800,450,380,800,450,980);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.6)');ctx.fillStyle=vg;ctx.fillRect(0,0,LW,LH);
+  // HUD
+  setText('chap',chap);setText('clock',clock);setText('mag','放大 '+fmtMag(MPP_A/mpp));
+  const target=mpp*170,p10=Math.pow(10,Math.floor(Math.log10(target))),n=target/p10,nice=(n<1.5?1:n<3.5?2:n<7.5?5:10)*p10;
+  const bl=nice/mpp;if(last.bw!==Math.round(bl)){last.bw=Math.round(bl);hud.bar.style.width=(bl/LW*100).toFixed(2)+'cqw';}
+  setText('barLbl',fmtLen(nice));
+  const inC=t>=T_BC1&&C;hud.count.hidden=!inC;if(inC)setText('count',`被敲下的咖啡分子：${C.dis} / ${C.total}`);
+  let cap='',ca=0;if(showCap)for(const [a,b,s] of CAPS)if(t>=a&&t<b){cap=s;ca=Math.min(1,(t-a)/.35,(b-t)/.35);break;}
+  setText('cap',cap);hud.cap.style.opacity=ca.toFixed(2);
+  const ch=t<T_AB1?0:t<T_BC1?1:2;if(last.ch!==ch){last.ch=ch;document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-current',String(+b.dataset.ch===ch)));}
+}
+function update(dt){
+  if(t<T_AB1&&A)updateA(dt);
+  if(t>=T_AB0&&!B)initB();if(B&&t>=T_AB0&&t<T_BC1)updateB(dt);
+  if(t>=T_BC0&&!C)initC();if(C&&t>=T_BC0)updateC(dt);
+}
+let prev=performance.now();
+function loop(now){const dt=Math.min(.05,(now-prev)/1000);prev=now;if(playing&&K>0){t+=dt;update(dt);}if(K>0)render();requestAnimationFrame(loop);}
+
+function restart(){t=0;initA();B=null;C=null;}
+function jump(ch){if(ch===0)restart();else if(ch===1){t=T_AB1;if(!A)initA();initB();C=null;}else{t=T_BC1;if(!B)initB();if(!C)initC();}}
+function resize(){const r=frame.getBoundingClientRect();if(!r.width)return;const dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.width*dpr*LH/LW);K=cv.width/LW;buildSprites();}
+new ResizeObserver(resize).observe(frame);
+const playBtn=$('play');
+function setPlaying(v){playing=v;playBtn.textContent=v?'暫停':'播放';}
+playBtn.addEventListener('click',()=>setPlaying(!playing));
+$('restart').addEventListener('click',()=>{restart();setPlaying(true);});
+document.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{jump(+b.dataset.ch);setPlaying(true);}));
+const tr=$('tempR'),to=$('tempO');tr.addEventListener('input',()=>{temp=+tr.value;to.textContent=temp+'°C';});
+const capBtn=$('capBtn');capBtn.addEventListener('click',()=>{showCap=!showCap;capBtn.setAttribute('aria-pressed',String(showCap));capBtn.textContent=showCap?'字幕：開':'字幕：關';});
+$('fsBtn').addEventListener('click',()=>{const s=$('stage');try{if(document.fullscreenElement)document.exitFullscreen();else{const p=s.requestFullscreen&&s.requestFullscreen();if(p&&p.catch)p.catch(()=>{});}}catch(e){}});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['INPUT','BUTTON'].includes(document.activeElement.tagName)){e.preventDefault();setPlaying(!playing);}});
+restart();
+if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)setPlaying(false);
+resize();requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
